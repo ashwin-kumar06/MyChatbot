@@ -1,21 +1,14 @@
 from flask import Flask, request
 from flask_restx import Api, Resource, fields
 from flask_cors import CORS
-from transformers import GPT2LMHeadModel, GPT2Tokenizer
-import torch
 from typing import List, Tuple
 
 app = Flask(__name__)
 CORS(app)
 api = Api(app, version='1.0', title='Enhanced Chatbot API',
-    description='An advanced chatbot API using GPT-2 with a feedback mechanism')
+    description='A chatbot API with predefined responses and a feedback mechanism')
 
 ns = api.namespace('chatbot', description='Chatbot operations')
-
-# Initialize the GPT-2 model and tokenizer
-model_name = "gpt2"
-tokenizer = GPT2Tokenizer.from_pretrained(model_name)
-model = GPT2LMHeadModel.from_pretrained(model_name)
 
 # Define conversation history
 conversations: List[Tuple[str, str]] = [
@@ -49,27 +42,7 @@ def get_response(user_input: str) -> str:
     for pattern, response in conversations:
         if user_input.lower() in pattern.lower():
             return response
-
-    # If no match found, use GPT-2 to generate a response
-    input_ids = tokenizer.encode(user_input, return_tensors='pt')
-    attention_mask = torch.ones(input_ids.shape, dtype=torch.long)
-    pad_token_id = tokenizer.eos_token_id
-
-    output = model.generate(
-        input_ids,
-        attention_mask=attention_mask,
-        max_length=100,
-        num_return_sequences=1,
-        no_repeat_ngram_size=2,
-        do_sample=True,
-        top_k=50,
-        top_p=0.95,
-        temperature=0.7,
-        pad_token_id=pad_token_id
-    )
-
-    response = tokenizer.decode(output[0], skip_special_tokens=True)
-    return response
+    return "I'm not sure how to respond to that. Can you please rephrase or ask something else?"
 
 @ns.route('/chat')
 class Chat(Resource):
